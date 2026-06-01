@@ -1090,7 +1090,7 @@
     const emptyState = document.querySelector("#emptyState");
     const pagesEl = document.querySelector("#pages");
     const cardTemplate = document.querySelector("#invoiceCardTemplate");
-    const ocrEndpoint = "http://127.0.0.1:8765/ocr";
+    const ocrEndpoint = `${window.location.protocol}//${window.location.hostname}:8765/ocr`;
     const expenseFormStorageKey = "invoiceExpenseForm";
     const expenseForm = {
       company: "",
@@ -1103,6 +1103,13 @@
 
     function t(key, params = {}) {
       return appI18n.t(key, params);
+    }
+
+    function createId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+      }
+      return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     }
 
     function renderLanguageOptions() {
@@ -1372,7 +1379,7 @@
       }
 
       return {
-        id: crypto.randomUUID(),
+        id: createId(),
         name,
         type: targetType,
         fileType: isPdf ? "pdf" : "image",
@@ -1911,7 +1918,7 @@
 
     function createRouteRow() {
       return {
-        id: crypto.randomUUID(),
+        id: createId(),
         date: "",
         place: "",
         dateStart: "",
