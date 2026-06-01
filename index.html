@@ -154,6 +154,18 @@
       gap: 8px;
     }
 
+    .settings-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .settings-status {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
     .form-grid label,
     .manual-grid label,
     .expense-fields label {
@@ -979,6 +991,10 @@
             <input data-setting-field="project" type="text">
           </label>
         </div>
+        <div class="settings-actions">
+          <button class="primary" id="saveSettingsBtn" type="button" data-i18n="saveToBrowser">保存到本地浏览器</button>
+          <span class="settings-status" id="settingsStatus" aria-live="polite"></span>
+        </div>
       </section>
 
       <div class="upload-grid">
@@ -1066,6 +1082,8 @@
     const fileInputs = document.querySelectorAll(".file-input");
     const dropzones = document.querySelectorAll(".dropzone");
     const settingFields = document.querySelectorAll("[data-setting-field]");
+    const saveSettingsBtn = document.querySelector("#saveSettingsBtn");
+    const settingsStatus = document.querySelector("#settingsStatus");
     const languageSelect = document.querySelector("#languageSelect");
     const invoiceList = document.querySelector("#invoiceList");
     const emptyState = document.querySelector("#emptyState");
@@ -1117,6 +1135,13 @@
         project: expenseForm.project
       };
       localStorage.setItem(expenseFormStorageKey, JSON.stringify(payload));
+      settingsStatus.dataset.statusKey = "settingsSaved";
+      settingsStatus.textContent = t("settingsSaved");
+    }
+
+    function markExpenseFormUnsaved() {
+      settingsStatus.dataset.statusKey = "settingsUnsaved";
+      settingsStatus.textContent = t("settingsUnsaved");
     }
 
     function renderExpenseFormSettings() {
@@ -1135,6 +1160,9 @@
         element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
       });
       languageSelect.value = currentLocale;
+      if (settingsStatus.dataset.statusKey) {
+        settingsStatus.textContent = t(settingsStatus.dataset.statusKey);
+      }
       renderList();
     }
 
@@ -1146,10 +1174,12 @@
     settingFields.forEach((field) => {
       field.addEventListener("input", () => {
         expenseForm[field.dataset.settingField] = field.value;
-        saveExpenseFormSettings();
+        markExpenseFormUnsaved();
         renderPages(buildPages());
       });
     });
+
+    saveSettingsBtn.addEventListener("click", saveExpenseFormSettings);
 
     fileInputs.forEach((fileInput) => {
       const targetType = fileInput.dataset.type;
@@ -1259,7 +1289,7 @@
       const field = event.target.closest("[data-table-field]");
       if (field) {
         expenseForm[field.dataset.tableField] = field.value;
-        saveExpenseFormSettings();
+        markExpenseFormUnsaved();
         renderExpenseFormSettings();
         return;
       }
