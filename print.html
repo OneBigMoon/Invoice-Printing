@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>发票打印页</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style id="printStyles"></style>
+  <style>
+    .print-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      background: #ffffff;
+      border-bottom: 1px solid #d8dee4;
+      box-shadow: 0 4px 16px rgba(23, 32, 38, 0.08);
+    }
+
+    .print-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #172026;
+    }
+
+    .print-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .print-hint {
+      font-size: 12px;
+      color: #64727f;
+      white-space: nowrap;
+    }
+
+    .print-empty {
+      width: min(560px, calc(100vw - 32px));
+      margin: 80px auto;
+      padding: 24px;
+      background: #ffffff;
+      border: 1px solid #d8dee4;
+      border-radius: 8px;
+      color: #172026;
+      line-height: 1.7;
+    }
+
+    #printRoot {
+      display: block;
+      min-height: calc(100vh - 58px);
+      min-width: calc(210mm + 56px);
+      padding: 28px;
+      overflow: auto;
+    }
+
+    #printRoot .workspace {
+      padding: 0;
+      overflow: visible;
+    }
+
+    #printRoot .print-pages {
+      display: grid;
+      gap: 24px;
+      justify-content: center;
+    }
+
+    #printRoot .page {
+      width: 210mm;
+      max-width: none;
+      height: 297mm;
+      aspect-ratio: auto;
+    }
+
+    @media print {
+      .print-toolbar,
+      .print-empty {
+        display: none !important;
+      }
+
+      #printRoot {
+        min-height: auto;
+        min-width: 0;
+        padding: 0;
+        overflow: visible;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-toolbar">
+    <div class="print-title" id="printTitle">发票打印页</div>
+    <div class="print-actions">
+      <span class="print-hint" id="printHint"></span>
+      <button type="button" id="backBtn" onclick="returnToEditor()">返回编辑</button>
+      <button class="primary" type="button" id="printBtn" onclick="triggerPrint()">打印</button>
+    </div>
+  </div>
+  <main class="app-shell" id="printRoot"></main>
+
+  <script src="/i18n.js"></script>
+  <script>
+    const payloadText = localStorage.getItem("invoicePrintPayload");
+    const printRoot = document.querySelector("#printRoot");
+    const printStyles = document.querySelector("#printStyles");
+    const printHint = document.querySelector("#printHint");
+    const printTitle = document.querySelector("#printTitle");
+    const backBtn = document.querySelector("#backBtn");
+    const printBtn = document.querySelector("#printBtn");
+    const appI18n = window.InvoiceI18n.create();
+    let currentLocale = appI18n.locale;
+
+    function t(key, params = {}) {
+      return appI18n.t(key, params);
+    }
+
+    function applyLocale() {
+      document.documentElement.lang = currentLocale;
+      document.title = t("printPageTitle");
+      printTitle.textContent = t("printPageTitle");
+      backBtn.textContent = t("backToEdit");
+      printBtn.textContent = t("print");
+      printHint.textContent = t("printShortcut", { shortcut: getPrintShortcut() });
+    }
+
+    function getPrintShortcut() {
+      const platform = `${navigator.platform || ""} ${navigator.userAgent || ""}`;
+      return /Mac|iPhone|iPad|iPod/i.test(platform) ? "⌘ + P" : "Ctrl + P";
+    }
+
+    function renderPrintPage() {
+      if (!payloadText) {
+        printRoot.innerHTML = `<section class="print-empty">${t("printEmpty")}</section>`;
+        return false;
+      }
+
+      try {
+        const payload = JSON.parse(payloadText);
+        currentLocale = appI18n.setLocale(payload.locale || currentLocale);
+        applyLocale();
+        printStyles.textContent = payload.styles || "";
+        printRoot.innerHTML = `
+          <section class="workspace">
+            <div class="print-pages">${payload.pages || ""}</div>
+          </section>
+        `;
+        return true;
+      } catch (error) {
+        printRoot.innerHTML = `<section class="print-empty">${t("printError")}</section>`;
+        return false;
+      }
+    }
+
+    function triggerPrint() {
+      if (typeof window.print === "function") {
+        window.print();
+        return;
+      }
+
+      printHint.textContent = t("printApiMissing", { shortcut: getPrintShortcut() });
+    }
+
+    function returnToEditor() {
+      window.location.href = "/";
+    }
+
+    applyLocale();
+
+    if (renderPrintPage()) {
+      window.addEventListener("load", () => {
+        setTimeout(triggerPrint, 250);
+      });
+    }
+  </script>
+</body>
+</html>

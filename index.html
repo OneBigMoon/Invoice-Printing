@@ -1,0 +1,2278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f766e">
+  <title>发票打印排版</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="alternate icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <style>
+    :root {
+      --ink: #172026;
+      --muted: #64727f;
+      --line: #d8dee4;
+      --panel: #ffffff;
+      --paper: #ffffff;
+      --app: #e9eef1;
+      --accent: #0f766e;
+      --accent-strong: #0b5f59;
+      --danger: #b42318;
+      --shadow: 0 8px 30px rgba(23, 32, 38, 0.12);
+      --accent-soft: #e7f4f2;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.08), transparent 32%),
+        repeating-linear-gradient(0deg, rgba(23, 32, 38, 0.035) 0 1px, transparent 1px 22px),
+        var(--app);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      padding: 0 12px;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    .primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .primary:hover {
+      background: var(--accent-strong);
+      border-color: var(--accent-strong);
+    }
+
+    .danger {
+      color: var(--danger);
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(360px, 440px) 1fr;
+    }
+
+    .side {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      padding: 18px;
+    }
+
+    .brand {
+      margin: 0 0 6px;
+      font-size: 21px;
+      line-height: 1.2;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .topbar .brand {
+      margin: 0;
+    }
+
+    .language-select {
+      min-width: 104px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 0 8px;
+      font-size: 12px;
+    }
+
+    .subhead {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .form-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcfd;
+      margin-bottom: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .form-grid label,
+    .manual-grid label,
+    .expense-fields label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .form-grid input,
+    .manual-grid input,
+    .manual-grid select,
+    .expense-fields input {
+      min-width: 0;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 0 8px;
+    }
+
+    .manual-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .manual-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .manual-card header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .manual-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .dropzone {
+      border: 1px dashed #8ea0ad;
+      border-radius: 8px;
+      background: #f8fafb;
+      padding: 12px 10px;
+      color: var(--muted);
+      text-align: center;
+      display: grid;
+      gap: 7px;
+      place-items: center;
+      min-height: 122px;
+      position: relative;
+      transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
+
+    .dropzone[data-target-type="train"] {
+      border-color: #8aa4d6;
+      background: #edf4ff;
+    }
+
+    .dropzone[data-target-type="taxi"] {
+      border-color: #85c7ba;
+      background: #eaf8f5;
+    }
+
+    .dropzone[data-target-type="hotel"] {
+      border-color: #d9a86a;
+      background: #fff5e6;
+    }
+
+    .dropzone[data-target-type="other"] {
+      border-color: #a8b3c2;
+      background: #f3f6f9;
+    }
+
+    .dropzone.is-dragging {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .badge {
+      display: inline-grid;
+      place-items: center;
+      min-height: 22px;
+      border-radius: 99px;
+      font-size: 11px;
+      padding: 0 8px;
+      background: #f1f5f9;
+      color: var(--ink);
+    }
+
+    .dropzone .badge {
+      min-height: 28px;
+      border-radius: 6px;
+      padding: 0 10px;
+      font-size: 14px;
+      font-weight: 750;
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+    }
+
+    .upload-title {
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .upload-meta {
+      max-width: 260px;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .choose-file {
+      display: inline-grid;
+      place-items: center;
+      min-height: 34px;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      color: var(--accent-strong);
+      background: #fff;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+
+    .file-input {
+      width: 1px;
+      height: 1px;
+      position: absolute;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      position: sticky;
+      top: -18px;
+      z-index: 3;
+      background: linear-gradient(#fff 78%, rgba(255, 255, 255, 0));
+      padding: 10px 0 14px;
+    }
+
+    .inline-status {
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 12px;
+      margin: -6px 0 10px;
+      line-height: 1.4;
+    }
+
+    .invoice-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .invoice-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+
+    .invoice-card.type-train {
+      border-left: 6px solid #3b82f6;
+      background: #f4f8ff;
+    }
+
+    .invoice-card.type-taxi {
+      border-left: 6px solid #0f766e;
+      background: #f1fbf8;
+    }
+
+    .invoice-card.type-hotel {
+      border-left: 6px solid #c47a16;
+      background: #fff8ed;
+    }
+
+    .invoice-card.type-other {
+      border-left: 6px solid #64748b;
+      background: #f8fafc;
+    }
+
+    .invoice-card header {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .thumb {
+      width: 54px;
+      height: 38px;
+      flex: none;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #f3f5f7;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .name {
+      min-width: 0;
+      flex: 1;
+      font-size: 13px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .meta {
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 750;
+      padding-left: 64px;
+      margin-top: -4px;
+    }
+
+    .ocr-status {
+      color: #475569;
+      font-size: 12px;
+      margin-left: 64px;
+      margin-top: -6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      padding: 5px 8px;
+      line-height: 1.35;
+    }
+
+    .ocr-status.is-pending {
+      color: #854d0e;
+      border-color: #facc15;
+      background: #fef9c3;
+    }
+
+    .ocr-status.is-success {
+      color: #166534;
+      border-color: #86efac;
+      background: #dcfce7;
+    }
+
+    .ocr-status.is-empty,
+    .ocr-status.is-error {
+      color: #991b1b;
+      border-color: #fca5a5;
+      background: #fee2e2;
+    }
+
+    .expense-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr 0.9fr;
+      gap: 8px;
+    }
+
+    .preview-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .preview-remove {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid #ffffff;
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      min-height: 0;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .preview-remove:hover {
+      background: #fff;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+
+    .workspace {
+      padding: 28px;
+      overflow: auto;
+    }
+
+    .print-pages {
+      display: grid;
+      gap: 24px;
+      justify-content: center;
+    }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      background: var(--paper);
+      box-shadow: var(--shadow), 0 0 0 1px rgba(23, 32, 38, 0.05);
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+    }
+
+    .slot {
+      position: absolute;
+      left: 10mm;
+      right: 10mm;
+      border: 1px dashed #ccd4da;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .slot.top {
+      top: 10mm;
+      height: calc(50% - 15mm);
+    }
+
+    .slot.bottom {
+      bottom: 10mm;
+      height: calc(50% - 15mm);
+    }
+
+    .slot.full {
+      inset: 10mm;
+    }
+
+    .invoice-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .invoice-pdf {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #fff;
+    }
+
+    .train-grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 3mm;
+      padding: 3mm;
+    }
+
+    .train-cell {
+      border: 1px solid #e2e8ee;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .train-cell img,
+    .train-cell object {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .placeholder {
+      color: #9aa7b2;
+      font-size: 13px;
+    }
+
+    .expense-page-inner {
+      position: absolute;
+      inset: 16mm 12mm;
+      color: #000;
+      font-family: "Songti SC", "SimSun", serif;
+    }
+
+    .expense-company {
+      margin: 0;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: 8px;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .expense-title {
+      margin: 18px 0 5px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .expense-date {
+      text-align: right;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .expense-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+      line-height: 1.22;
+    }
+
+    .expense-table th,
+    .expense-table td {
+      border: 1px solid #000;
+      height: 25px;
+      padding: 2px 4px;
+      text-align: center;
+      vertical-align: middle;
+      font-weight: 400;
+      word-break: break-all;
+      position: relative;
+    }
+
+    .expense-table .left-text {
+      text-align: left;
+      padding-left: 8px;
+    }
+
+    .expense-table .signature {
+      height: 54px;
+      font-size: 13px;
+    }
+
+    .expense-table .money-cell {
+      font-size: 11px;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .money-grid {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 1.6fr repeat(7, 1fr);
+      align-items: center;
+      text-align: center;
+    }
+
+    .table-input {
+      width: 100%;
+      height: 100%;
+      min-height: 21px;
+      min-width: 0;
+      border: 0;
+      padding: 0;
+      color: #000;
+      background: transparent;
+      font: inherit;
+      font-family: inherit;
+      text-align: center;
+      outline: 0;
+      white-space: nowrap;
+      word-break: keep-all;
+      overflow: hidden;
+      text-overflow: clip;
+    }
+
+    .table-input.is-tight {
+      font-size: 10px;
+    }
+
+    .table-input.is-extra-tight {
+      font-size: 9px;
+    }
+
+    .route-label {
+      display: grid;
+      grid-template-columns: 1fr 22px;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .route-add {
+      width: 20px;
+      height: 20px;
+      min-height: 20px;
+      padding: 0;
+      border-radius: 50%;
+      line-height: 18px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .date-range-picker {
+      position: relative;
+      width: calc(100% + 6px);
+      margin: 0 -3px;
+    }
+
+    .route-date-display {
+      width: 100%;
+      height: 21px;
+      min-height: 21px;
+      min-width: 0;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: #000;
+      font: inherit;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 21px;
+      text-align: center;
+      cursor: pointer;
+      white-space: nowrap;
+      word-break: keep-all;
+      overflow: hidden;
+    }
+
+    .route-date-display:hover {
+      background: #f8fafc;
+    }
+
+    .route-date-display.is-tight {
+      font-size: 10px;
+    }
+
+    .route-date-display.is-extra-tight {
+      font-size: 9px;
+    }
+
+    .date-popover {
+      position: absolute;
+      z-index: 10;
+      top: 24px;
+      left: 0;
+      width: 238px;
+      border: 1px solid #111;
+      background: #fff;
+      padding: 8px;
+      display: none;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+      text-align: left;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .date-range-picker.is-open .date-popover {
+      display: grid;
+      gap: 7px;
+    }
+
+    .calendar-head {
+      display: grid;
+      grid-template-columns: 28px 1fr 28px;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .calendar-nav {
+      width: 26px;
+      height: 24px;
+      min-height: 24px;
+      padding: 0;
+      border-radius: 4px;
+    }
+
+    .calendar-week,
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .calendar-week span {
+      color: #64748b;
+      line-height: 18px;
+    }
+
+    .calendar-day {
+      width: 28px;
+      height: 24px;
+      min-height: 24px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 0;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .calendar-day.is-muted {
+      color: #94a3b8;
+    }
+
+    .calendar-day.is-in-range {
+      background: #e7f4f2;
+      border-color: #99d6ce;
+    }
+
+    .calendar-day.is-selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .calendar-hint {
+      color: #64748b;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .settlement-cell {
+      padding: 0;
+    }
+
+    .settlement-stack {
+      height: 100%;
+      display: grid;
+      grid-template-rows: repeat(3, 1fr);
+      text-align: left;
+      font-size: 12px;
+    }
+
+    .settlement-stack div {
+      display: flex;
+      align-items: center;
+      padding-left: 12px;
+      border-bottom: 1px solid #000;
+    }
+
+    .settlement-stack div:last-child {
+      border-bottom: 0;
+    }
+
+    .signature-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      height: 54px;
+    }
+
+    .signature-pair {
+      display: grid;
+      grid-template-columns: 44% 56%;
+      height: 100%;
+    }
+
+    .signature-pair + .signature-pair {
+      border-left: 1px solid #000;
+    }
+
+    .signature-label {
+      display: grid;
+      place-items: center;
+      border-right: 1px solid #000;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+
+    @media (max-width: 980px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        position: static;
+        height: auto;
+      }
+
+      .upload-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        position: static;
+      }
+
+      .workspace {
+        padding: 14px;
+      }
+
+      .print-pages {
+        display: block;
+      }
+
+      .page {
+        width: 100%;
+        max-width: 210mm;
+        height: auto;
+        aspect-ratio: 210 / 297;
+        margin: 0 auto 16px;
+      }
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 210mm;
+        background: #fff;
+      }
+
+      .side {
+        display: none;
+      }
+
+      .app-shell {
+        display: block;
+      }
+
+      .workspace {
+        padding: 0;
+        overflow: visible;
+      }
+
+      .print-pages {
+        display: block;
+      }
+
+      .page {
+        width: 210mm;
+        height: 297mm;
+        box-shadow: none;
+        margin: 0;
+        break-after: page;
+      }
+
+      .page:last-child {
+        break-after: auto;
+      }
+
+      .slot,
+      .train-cell {
+        border-color: transparent;
+      }
+
+      .preview-remove {
+        display: none;
+      }
+
+      .route-add {
+        display: none;
+      }
+
+      .date-popover {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="side">
+      <div class="topbar">
+        <h1 class="brand" data-i18n="appTitle">发票打印排版</h1>
+        <select class="language-select" id="languageSelect" aria-label="Language">
+        </select>
+      </div>
+      <p class="subhead" data-i18n="subhead">左侧按类型上传，多上传框=多分类，不用再二次选类型。</p>
+
+      <section class="form-panel">
+        <h2 class="panel-title" data-i18n="settingsTitle">报销单信息</h2>
+        <div class="form-grid">
+          <label><span data-i18n="companyName">公司名</span>
+            <input data-setting-field="company" type="text">
+          </label>
+          <label><span data-i18n="departmentName">部门</span>
+            <input data-setting-field="department" type="text">
+          </label>
+          <label><span data-i18n="personName">姓名</span>
+            <input data-setting-field="name" type="text">
+          </label>
+          <label><span data-i18n="projectName">事由、项目</span>
+            <input data-setting-field="project" type="text">
+          </label>
+        </div>
+      </section>
+
+      <div class="upload-grid">
+        <div class="dropzone" data-target-type="taxi">
+          <span class="badge" data-i18n="typeTaxi">市区交通费</span>
+          <div class="upload-title" data-i18n="uploadTitle">拖拽图片或 PDF</div>
+          <div class="upload-meta" data-i18n="uploadTaxiMeta">上传文件后直接归到“市区交通费”</div>
+          <label class="choose-file" for="invoiceFiles-taxi" data-i18n="chooseFile">选择文件</label>
+          <input class="file-input" id="invoiceFiles-taxi" data-type="taxi" type="file" accept="image/*,.pdf,application/pdf" multiple>
+        </div>
+        <div class="dropzone" data-target-type="train">
+          <span class="badge" data-i18n="typeTrain">飞机车船费</span>
+          <div class="upload-title" data-i18n="uploadTitle">拖拽图片或 PDF</div>
+          <div class="upload-meta" data-i18n="uploadTrainMeta">火车票半页最多显示 6 张</div>
+          <label class="choose-file" for="invoiceFiles-train" data-i18n="chooseFile">选择文件</label>
+          <input class="file-input" id="invoiceFiles-train" data-type="train" type="file" accept="image/*,.pdf,application/pdf" multiple>
+        </div>
+        <div class="dropzone" data-target-type="hotel">
+          <span class="badge" data-i18n="typeHotel">旅馆费</span>
+          <div class="upload-title" data-i18n="uploadTitle">拖拽图片或 PDF</div>
+          <div class="upload-meta" data-i18n="uploadHotelMeta">上传文件后直接归到“旅馆费”</div>
+          <label class="choose-file" for="invoiceFiles-hotel" data-i18n="chooseFile">选择文件</label>
+          <input class="file-input" id="invoiceFiles-hotel" data-type="hotel" type="file" accept="image/*,.pdf,application/pdf" multiple>
+        </div>
+        <div class="dropzone" data-target-type="other">
+          <span class="badge" data-i18n="typeOther">其他</span>
+          <div class="upload-title" data-i18n="uploadTitle">拖拽图片或 PDF</div>
+          <div class="upload-meta" data-i18n="uploadOtherMeta">上传文件后直接归到“其他”</div>
+          <label class="choose-file" for="invoiceFiles-other" data-i18n="chooseFile">选择文件</label>
+          <input class="file-input" id="invoiceFiles-other" data-type="other" type="file" accept="image/*,.pdf,application/pdf" multiple>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="printBtn" type="button" onclick="handlePrintClick()" data-i18n="print">打印</button>
+        <button id="clearBtn" type="button" data-i18n="clear">清空</button>
+      </div>
+      <p class="inline-status" id="printStatus" aria-live="polite"></p>
+
+      <section class="invoice-list" id="invoiceList" aria-label="发票列表"></section>
+      <p class="empty" id="emptyState" data-i18n="emptyState">未上传文件。拖拽或选择后自动生成预览。</p>
+    </aside>
+
+    <section class="workspace" aria-label="打印预览">
+      <div class="print-pages" id="pages"></div>
+    </section>
+  </main>
+
+  <template id="invoiceCardTemplate">
+    <article class="invoice-card">
+      <header>
+        <div class="thumb"></div>
+        <div class="name"></div>
+      </header>
+      <div class="meta"></div>
+      <div class="ocr-status"></div>
+      <div class="expense-fields">
+        <label><span data-i18n="fieldDate">时间</span>
+          <input data-expense-field="expenseDate" type="text" placeholder="如 3/18-3/18" data-i18n-placeholder="datePlaceholder">
+        </label>
+        <label><span data-i18n="fieldPlace">地点</span>
+          <input data-expense-field="place" type="text" placeholder="如 福州-菏泽" data-i18n-placeholder="placePlaceholder">
+        </label>
+        <label><span data-i18n="fieldAmount">金额</span>
+          <input data-expense-field="amount" type="number" min="0" step="0.01" placeholder="0.00">
+        </label>
+      </div>
+    </article>
+  </template>
+
+  <script src="/i18n.js"></script>
+  <script>
+    const appI18n = window.InvoiceI18n.create();
+    let currentLocale = appI18n.locale;
+
+    const invoiceTypes = {
+      taxi: "市区交通费",
+      train: "飞机车船费",
+      hotel: "旅馆费",
+      other: "其他"
+    };
+
+    const invoices = [];
+    const manualRows = [];
+    const fileInputs = document.querySelectorAll(".file-input");
+    const dropzones = document.querySelectorAll(".dropzone");
+    const settingFields = document.querySelectorAll("[data-setting-field]");
+    const languageSelect = document.querySelector("#languageSelect");
+    const invoiceList = document.querySelector("#invoiceList");
+    const emptyState = document.querySelector("#emptyState");
+    const pagesEl = document.querySelector("#pages");
+    const cardTemplate = document.querySelector("#invoiceCardTemplate");
+    const ocrEndpoint = "http://127.0.0.1:8765/ocr";
+    const expenseFormStorageKey = "invoiceExpenseForm";
+    const expenseForm = {
+      company: "",
+      title: "差旅费报销单",
+      department: "",
+      name: "",
+      project: "",
+      date: new Date().toISOString().slice(0, 10)
+    };
+
+    function t(key, params = {}) {
+      return appI18n.t(key, params);
+    }
+
+    function renderLanguageOptions() {
+      languageSelect.replaceChildren();
+      appI18n.supportedLocales.forEach((locale) => {
+        const option = document.createElement("option");
+        option.value = locale;
+        option.textContent = appI18n.dictionaries[locale].languageName;
+        languageSelect.append(option);
+      });
+    }
+
+    function loadExpenseFormSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(expenseFormStorageKey) || "{}");
+        ["company", "department", "name", "project"].forEach((key) => {
+          if (typeof saved[key] === "string") {
+            expenseForm[key] = saved[key];
+          }
+        });
+      } catch (error) {
+        // Ignore broken local settings and keep safe defaults.
+      }
+    }
+
+    function saveExpenseFormSettings() {
+      const payload = {
+        company: expenseForm.company,
+        department: expenseForm.department,
+        name: expenseForm.name,
+        project: expenseForm.project
+      };
+      localStorage.setItem(expenseFormStorageKey, JSON.stringify(payload));
+    }
+
+    function renderExpenseFormSettings() {
+      settingFields.forEach((field) => {
+        field.value = expenseForm[field.dataset.settingField] || "";
+      });
+    }
+
+    function applyLocale() {
+      document.documentElement.lang = currentLocale;
+      document.title = t("appTitle");
+      document.querySelectorAll("[data-i18n]").forEach((element) => {
+        element.textContent = t(element.dataset.i18n);
+      });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+        element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
+      });
+      languageSelect.value = currentLocale;
+      renderList();
+    }
+
+    languageSelect.addEventListener("change", () => {
+      currentLocale = appI18n.setLocale(languageSelect.value);
+      applyLocale();
+    });
+
+    settingFields.forEach((field) => {
+      field.addEventListener("input", () => {
+        expenseForm[field.dataset.settingField] = field.value;
+        saveExpenseFormSettings();
+        renderPages(buildPages());
+      });
+    });
+
+    fileInputs.forEach((fileInput) => {
+      const targetType = fileInput.dataset.type;
+      fileInput.addEventListener("change", async () => {
+        await addFiles(Array.from(fileInput.files || []), targetType);
+        fileInput.value = "";
+      });
+    });
+
+    dropzones.forEach((dropzone) => {
+      dropzone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        dropzone.classList.add("is-dragging");
+      });
+
+      dropzone.addEventListener("dragleave", (event) => {
+        if (!dropzone.contains(event.relatedTarget)) {
+          dropzone.classList.remove("is-dragging");
+        }
+      });
+
+      dropzone.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        dropzone.classList.remove("is-dragging");
+        await addFiles(Array.from(event.dataTransfer.files || []), dropzone.dataset.targetType);
+      });
+    });
+
+    function handlePrintClick() {
+      const status = document.querySelector("#printStatus");
+      status.textContent = t("printOpening");
+
+      try {
+        if (openPrintPage()) {
+          status.textContent = t("printOpened", { shortcut: getPrintShortcut() });
+          return;
+        }
+      } catch (error) {
+        // fall through to shortcut hint
+      }
+
+      status.textContent = t("printBlocked", { shortcut: getPrintShortcut() });
+    }
+
+    document.querySelector("#clearBtn").addEventListener("click", () => {
+      invoices.splice(0).forEach((invoice) => {
+        URL.revokeObjectURL(invoice.src);
+      });
+      resetRouteRows();
+      render();
+    });
+
+    pagesEl.addEventListener("click", (event) => {
+      const deleteButton = event.target.closest(".preview-remove");
+      if (deleteButton) {
+        const invoiceId = deleteButton.dataset.invoiceId;
+        removeInvoiceById(invoiceId);
+        return;
+      }
+
+      if (event.target.closest("[data-route-add]")) {
+        manualRows.push(createRouteRow());
+        renderPages(buildPages());
+        return;
+      }
+
+      const dateToggle = event.target.closest("[data-route-date-toggle]");
+      if (dateToggle) {
+        const picker = dateToggle.closest("[data-route-date-picker]");
+        const isOpen = picker.classList.contains("is-open");
+        pagesEl.querySelectorAll("[data-route-date-picker].is-open").forEach((item) => {
+          item.classList.remove("is-open");
+        });
+        picker.classList.toggle("is-open", !isOpen);
+        return;
+      }
+
+      const calendarNav = event.target.closest("[data-calendar-nav]");
+      if (calendarNav) {
+        const row = manualRows.find((item) => item.id === calendarNav.dataset.routeId);
+        if (row) {
+          const currentMonth = Number(calendarNav.dataset.calendarMonth);
+          const currentYear = Number(calendarNav.dataset.calendarYear);
+          const nextDate = new Date(currentYear, currentMonth - 1 + Number(calendarNav.dataset.calendarNav), 1);
+          row.calendarYear = nextDate.getFullYear();
+          row.calendarMonth = nextDate.getMonth() + 1;
+        }
+        renderPages(buildPages());
+        reopenRoutePicker(calendarNav.dataset.routeId);
+        return;
+      }
+
+      const calendarDay = event.target.closest("[data-calendar-day]");
+      if (calendarDay) {
+        const row = manualRows.find((item) => item.id === calendarDay.dataset.routeId);
+        if (row) {
+          selectRouteDate(row, calendarDay.dataset.calendarDay);
+        }
+        renderPages(buildPages());
+        if (row && !row.dateEnd) {
+          reopenRoutePicker(row.id);
+        }
+      }
+    });
+
+    pagesEl.addEventListener("input", (event) => {
+      const field = event.target.closest("[data-table-field]");
+      if (field) {
+        expenseForm[field.dataset.tableField] = field.value;
+        saveExpenseFormSettings();
+        renderExpenseFormSettings();
+        return;
+      }
+
+      const routeField = event.target.closest("[data-route-field]");
+      if (routeField) {
+        const row = manualRows.find((item) => item.id === routeField.dataset.routeId);
+        if (row) {
+          row[routeField.dataset.routeField] = routeField.value;
+          if (routeField.dataset.routeField === "place") {
+            routeField.className = getTableInputClass(routeField.value);
+          }
+        }
+      }
+    });
+
+    pagesEl.addEventListener("change", (event) => {
+      if (event.target.closest("[data-route-field]")) {
+        renderPages(buildPages());
+      }
+    });
+
+    function removeInvoiceById(invoiceId) {
+      const index = invoices.findIndex((item) => item.id === invoiceId);
+      if (index < 0) {
+        return;
+      }
+      const [removed] = invoices.splice(index, 1);
+      URL.revokeObjectURL(removed.src);
+      render();
+    }
+
+    async function addFiles(files, targetType) {
+      const preparedFiles = await Promise.all(
+        files
+          .filter(isSupportedFile)
+          .map(async (file) => ({
+            file,
+            invoice: await createInvoiceRecord(file, targetType)
+          }))
+      );
+
+      preparedFiles.filter((item) => item.invoice).forEach((item) => {
+        invoices.push(item.invoice);
+      });
+      render();
+      preparedFiles.filter((item) => item.invoice).forEach((item) => {
+        runOcr(item.invoice, item.file);
+      });
+    }
+
+    function isSupportedFile(file) {
+      const name = file.name.toLowerCase();
+      return file.type.startsWith("image/") || file.type === "application/pdf" || name.endsWith(".pdf");
+    }
+
+    async function createInvoiceRecord(file, targetType) {
+      const name = file.name;
+      const isPdf = file.type === "application/pdf" || name.toLowerCase().endsWith(".pdf");
+
+      const originalSrc = URL.createObjectURL(file);
+      let src = originalSrc;
+
+      if (!isPdf && targetType === "taxi") {
+        const croppedSrc = await trimImageWhitespace(originalSrc);
+        if (trimmedDifferent(originalSrc, croppedSrc)) {
+          src = croppedSrc;
+          URL.revokeObjectURL(originalSrc);
+        }
+      }
+
+      return {
+        id: crypto.randomUUID(),
+        name,
+        type: targetType,
+        fileType: isPdf ? "pdf" : "image",
+        expenseDate: targetType === "train" ? inferDateFromName(name) : "",
+        place: "",
+        amount: "",
+        ocrStatusKey: "ocrWaiting",
+        src
+      };
+    }
+
+    async function runOcr(invoice, file) {
+      invoice.ocrStatusKey = "ocrRunning";
+      renderList();
+
+      const formData = new FormData();
+      formData.append("file", file, file.name);
+      formData.append("type", invoice.type);
+
+      try {
+        const response = await fetch(ocrEndpoint, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error(`OCR HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        const fields = result.fields || {};
+
+        if (!invoice.amount && fields.amount) {
+          invoice.amount = fields.amount;
+        }
+        if (shouldAutoFillRoute(invoice) && !invoice.expenseDate && fields.date) {
+          invoice.expenseDate = fields.date;
+        }
+        if (shouldAutoFillRoute(invoice) && !invoice.place && fields.place) {
+          invoice.place = fields.place;
+        }
+
+        invoice.ocrStatusKey = result.text ? "ocrSuccess" : "ocrEmpty";
+      } catch (error) {
+        invoice.ocrStatusKey = "ocrError";
+      }
+
+      render();
+    }
+
+    function inferDateFromName(fileName) {
+      const normalized = fileName.replace(/\s+/g, "");
+      const fullDate = normalized.match(/(20\d{2})[-_.年]?(\d{1,2})[-_.月]?(\d{1,2})/);
+      if (fullDate) {
+        return `${Number(fullDate[2])}/${Number(fullDate[3])}`;
+      }
+      const shortDate = normalized.match(/(\d{1,2})[-_.月](\d{1,2})/);
+      if (shortDate) {
+        return `${Number(shortDate[1])}/${Number(shortDate[2])}`;
+      }
+      return "";
+    }
+
+    function trimmedDifferent(originalSrc, croppedSrc) {
+      return Boolean(croppedSrc) && croppedSrc !== originalSrc;
+    }
+
+    async function trimImageWhitespace(imageSrc) {
+      return new Promise((resolve) => {
+        const image = new Image();
+        image.onload = () => {
+          const rawCanvas = document.createElement("canvas");
+          rawCanvas.width = image.naturalWidth;
+          rawCanvas.height = image.naturalHeight;
+
+          const rawContext = rawCanvas.getContext("2d");
+          rawContext.drawImage(image, 0, 0);
+
+          const imageData = rawContext.getImageData(0, 0, rawCanvas.width, rawCanvas.height);
+          const bounds = getNonWhiteBounds(imageData.data, rawCanvas.width, rawCanvas.height);
+
+          if (!bounds) {
+            return resolve(null);
+          }
+
+          const pad = 8;
+          const left = Math.max(0, bounds.left - pad);
+          const top = Math.max(0, bounds.top - pad);
+          const right = Math.min(rawCanvas.width - 1, bounds.right + pad);
+          const bottom = Math.min(rawCanvas.height - 1, bounds.bottom + pad);
+          const trimWidth = right - left + 1;
+          const trimHeight = bottom - top + 1;
+
+          if (trimWidth >= rawCanvas.width && trimHeight >= rawCanvas.height) {
+            return resolve(null);
+          }
+
+          const trimmedCanvas = document.createElement("canvas");
+          trimmedCanvas.width = trimWidth;
+          trimmedCanvas.height = trimHeight;
+          const trimmedContext = trimmedCanvas.getContext("2d");
+          trimmedContext.drawImage(
+            image,
+            left,
+            top,
+            trimWidth,
+            trimHeight,
+            0,
+            0,
+            trimWidth,
+            trimHeight
+          );
+
+          trimmedCanvas.toBlob((blob) => {
+            if (!blob) {
+              return resolve(null);
+            }
+            resolve(URL.createObjectURL(blob));
+          }, "image/png");
+        };
+        image.onerror = () => resolve(null);
+        image.src = imageSrc;
+      });
+    }
+
+    function getNonWhiteBounds(data, width, height) {
+      let left = width;
+      let top = height;
+      let right = -1;
+      let bottom = -1;
+
+      for (let y = 0; y < height; y += 1) {
+        const rowIndex = y * width * 4;
+        for (let x = 0; x < width; x += 1) {
+          const i = rowIndex + x * 4;
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const a = data[i + 3];
+
+          if (!isWhitePixel(r, g, b, a)) {
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+          }
+        }
+      }
+
+      if (right < 0) {
+        return null;
+      }
+
+      return { left, right, top, bottom };
+    }
+
+    function isWhitePixel(r, g, b, a) {
+      if (a === 0) {
+        return true;
+      }
+      return r > 244 && g > 244 && b > 244;
+    }
+
+    function render() {
+      renderList();
+      renderPages(buildPages());
+      emptyState.hidden = invoices.length > 0;
+    }
+
+    function renderList() {
+      invoiceList.replaceChildren();
+
+      invoices.forEach((invoice) => {
+        const card = cardTemplate.content.firstElementChild.cloneNode(true);
+        card.classList.add(`type-${invoice.type}`);
+        const thumb = card.querySelector(".thumb");
+        const name = card.querySelector(".name");
+        const meta = card.querySelector(".meta");
+        const ocrStatus = card.querySelector(".ocr-status");
+        const fields = card.querySelectorAll("[data-expense-field]");
+
+        thumb.append(createThumb(invoice));
+        name.textContent = invoice.name;
+        meta.textContent = getInvoiceTypeLabel(invoice.type);
+        ocrStatus.textContent = getOcrStatusText(invoice);
+        ocrStatus.className = `ocr-status ${getOcrStatusClass(invoice)}`;
+
+        fields.forEach((field) => {
+          const key = field.dataset.expenseField;
+          field.value = invoice[key] || "";
+          field.addEventListener("input", () => {
+            invoice[key] = field.value;
+            renderPages(buildPages());
+          });
+        });
+
+        invoiceList.append(card);
+      });
+    }
+
+    function getInvoiceTypeLabel(type) {
+      const keys = {
+        taxi: "typeTaxi",
+        train: "typeTrain",
+        hotel: "typeHotel",
+        other: "typeOther"
+      };
+      return t(keys[type] || "typeOther");
+    }
+
+    function getOcrStatusText(invoice) {
+      return t(invoice.ocrStatusKey || "ocrWaiting");
+    }
+
+    function getOcrStatusClass(invoice) {
+      const key = invoice.ocrStatusKey || "";
+      if (key === "ocrRunning" || key === "ocrWaiting") {
+        return "is-pending";
+      }
+      if (key === "ocrSuccess") {
+        return "is-success";
+      }
+      if (key === "ocrEmpty") {
+        return "is-empty";
+      }
+      if (key === "ocrError") {
+        return "is-error";
+      }
+      return "";
+    }
+
+    function tryNativePrint() {
+      if (typeof window.print === "function") {
+        window.print();
+        return true;
+      }
+      if (window.top && window.top !== window && typeof window.top.print === "function") {
+        window.top.focus();
+        window.top.print();
+        return true;
+      }
+      return false;
+    }
+
+    function hasNativePrint() {
+      return (
+        typeof window.print === "function" ||
+        (window.top && window.top !== window && typeof window.top.print === "function")
+      );
+    }
+
+    function getPrintShortcut() {
+      const platform = `${navigator.platform || ""} ${navigator.userAgent || ""}`;
+      return /Mac|iPhone|iPad|iPod/i.test(platform) ? "⌘ + P" : "Ctrl + P";
+    }
+
+    function openPrintPage() {
+      const payload = {
+        styles: collectPrintableStyles(),
+        pages: clonePrintablePages(),
+        locale: currentLocale,
+        createdAt: Date.now()
+      };
+      localStorage.setItem("invoicePrintPayload", JSON.stringify(payload));
+
+      window.location.href = "/print.html";
+      return true;
+    }
+
+    function collectPrintableStyles() {
+      return Array.from(document.querySelectorAll("style"))
+        .map((style) => style.textContent)
+        .join("\n");
+    }
+
+    function clonePrintablePages() {
+      const clone = pagesEl.cloneNode(true);
+      clone.querySelectorAll("input").forEach((input) => {
+        input.setAttribute("value", input.value);
+      });
+      clone.querySelectorAll("[data-route-date-toggle]").forEach((button) => {
+        if (button.textContent.trim() === "选择日期") {
+          button.textContent = "";
+        }
+      });
+      clone.querySelectorAll(".date-range-picker.is-open").forEach((picker) => {
+        picker.classList.remove("is-open");
+      });
+      clone.querySelectorAll(".preview-remove").forEach((button) => button.remove());
+      return clone.innerHTML;
+    }
+
+    function buildPages() {
+      const pages = [];
+      let currentHalfPage = null;
+
+      const flushHalfPage = () => {
+        if (currentHalfPage) {
+          pages.push(currentHalfPage);
+          currentHalfPage = null;
+        }
+      };
+
+      const addHalfUnit = (unit) => {
+        if (!currentHalfPage) {
+          currentHalfPage = { type: "split", top: null, bottom: null };
+        }
+
+        if (!currentHalfPage.top) {
+          currentHalfPage.top = unit;
+          return;
+        }
+
+        currentHalfPage.bottom = unit;
+        flushHalfPage();
+      };
+
+      for (let index = 0; index < invoices.length; index += 1) {
+        const invoice = invoices[index];
+
+        if (invoice.type === "train") {
+          const group = [];
+          while (
+            index < invoices.length &&
+            invoices[index].type === "train" &&
+            group.length < 6
+          ) {
+            group.push(invoices[index]);
+            index += 1;
+          }
+          index -= 1;
+          addHalfUnit({ type: "train", invoices: group });
+          continue;
+        }
+
+        addHalfUnit({ type: "single", invoice });
+      }
+
+      flushHalfPage();
+      return pages;
+    }
+
+    function renderPages(pages) {
+      pagesEl.replaceChildren();
+      pagesEl.append(createExpensePage());
+
+      if (pages.length === 0) {
+        return;
+      }
+
+      pages.forEach((pageData) => {
+        const page = createElement("section", "page");
+        page.append(createSlot("top", pageData.top));
+        page.append(createSlot("bottom", pageData.bottom || { type: "empty" }));
+        pagesEl.append(page);
+      });
+    }
+
+    function createExpensePage() {
+      const page = createElement("section", "page");
+      const inner = createElement("div", "expense-page-inner");
+      const rows = buildExpenseRows();
+      const total = rows.reduce((sum, row) => sum + row.amount, 0);
+      const date = parseFormDate(expenseForm.date);
+
+      inner.innerHTML = `
+        ${expenseForm.company ? `<h2 class="expense-company">${escapeHtml(expenseForm.company)}</h2>` : ""}
+        <h1 class="expense-title">${escapeHtml(expenseForm.title)}</h1>
+        <div class="expense-date">${date.year}年&nbsp;&nbsp;&nbsp;${date.month}月&nbsp;&nbsp;&nbsp;${date.day}日</div>
+        <table class="expense-table">
+          <colgroup>
+            <col style="width: 12.5%">
+            <col style="width: 12.5%">
+            <col style="width: 12.5%">
+            <col style="width: 12.5%">
+            <col style="width: 12.5%">
+            <col style="width: 12.5%">
+            <col style="width: 12.5%">
+            <col style="width: 12.5%">
+          </colgroup>
+          <tbody>
+            <tr>
+              <td>部&nbsp; 门</td>
+              <td colspan="2">${createTableInput("department", expenseForm.department)}</td>
+              <td>姓&nbsp; 名</td>
+              <td>${createTableInput("name", expenseForm.name)}</td>
+              <td>事由、项目</td>
+              <td colspan="2">${createTableInput("project", expenseForm.project)}</td>
+            </tr>
+            <tr>
+              <td colspan="2">起止时间地点</td>
+              <td>费用内容</td>
+              <td>张数</td>
+              <td>人/天</td>
+              <td>标准</td>
+              <td>申报金额</td>
+              <td>核准报销金额</td>
+            </tr>
+            ${rows.map((row, index) => `
+              <tr>
+                <td>${index === 0 ? createRouteLabel("时&nbsp; 间") : createRouteInput(row.routeId, "date", row.date)}</td>
+                <td>${index === 0 ? "地&nbsp; 点" : createRouteInput(row.routeId, "place", row.place)}</td>
+                <td>${escapeHtml(row.content)}</td>
+                <td>${row.count || ""}</td>
+                <td>${row.peopleDays || ""}</td>
+                <td>${row.standard || ""}</td>
+                <td>${formatMoney(row.amount)}</td>
+                <td></td>
+              </tr>
+            `).join("")}
+            <tr>
+              <td colspan="2">合计</td>
+              <td colspan="4"></td>
+              <td>${formatMoney(total)}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2">申报金额</td>
+              <td colspan="4" class="money-cell">${createMoneyAmountGrid(total)}</td>
+              <td colspan="2" rowspan="2" class="settlement-cell">
+                <div class="settlement-stack">
+                  <div>现金：</div>
+                  <div>转账：</div>
+                  <div>冲账：</div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2">核准金额</td>
+              <td colspan="4" class="money-cell">
+                <div class="money-grid">
+                  <span>（大写）</span><span>万</span><span>仟</span><span>佰</span><span>拾</span><span>元</span><span>角</span><span>分</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="8" class="signature">
+                <div class="signature-row">
+                  <div class="signature-pair"><div class="signature-label">董事长<br>审批</div><div></div></div>
+                  <div class="signature-pair"><div class="signature-label">总经理<br>审批</div><div></div></div>
+                  <div class="signature-pair"><div class="signature-label">财务<br>审核</div><div></div></div>
+                  <div class="signature-pair"><div class="signature-label">项目<br>（部门）<br>经理</div><div></div></div>
+                  <div class="signature-pair"><div class="signature-label">报销人</div><div></div></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+      page.append(inner);
+      return page;
+    }
+
+    function buildExpenseRows() {
+      const rows = [
+        createExpenseBucket("train", "飞机车船费"),
+        createExpenseBucket("taxi", "市区交通费"),
+        createExpenseBucket("hotel", "旅馆费"),
+        createExpenseBucket("allowance", "在途住勤补贴")
+      ];
+      const taxiItineraryAmounts = new Set(
+        invoices
+          .filter((invoice) => invoice.type === "taxi" && /行程单|行程/.test(invoice.name))
+          .map((invoice) => normalizeMoney(invoice.amount))
+          .filter(Boolean)
+      );
+      const routeDates = [];
+      const routePlaces = [];
+
+      invoices.forEach((invoice) => {
+        if (isDuplicateTaxiInvoice(invoice, taxiItineraryAmounts)) {
+          return;
+        }
+
+        const row = rows.find((item) => item.type === invoice.type);
+        if (!row) {
+          return;
+        }
+
+        row.count += 1;
+        row.amount += Number(invoice.amount) || 0;
+        if (shouldAutoFillRoute(invoice)) {
+          addUnique(routeDates, invoice.expenseDate);
+          addUnique(routePlaces, invoice.place);
+        }
+      });
+
+      const routeEntries = manualRows.map((row) => ({ ...row }));
+      if (routeDates.length || routePlaces.length) {
+        const autoTarget = routeEntries.find((row) => !row.date && !row.place);
+        const autoRow = autoTarget || createRouteRow();
+        autoRow.date = routeDates.join("、");
+        autoRow.place = routePlaces.join("、");
+        if (!autoTarget) {
+          routeEntries.push(autoRow);
+        }
+      }
+
+      const allowanceDays = calculateAllowanceDays(routeEntries.map((row) => row.date));
+      const allowanceRow = rows.find((row) => row.type === "allowance");
+      if (allowanceRow && allowanceDays > 0) {
+        allowanceRow.peopleDays = allowanceDays;
+        allowanceRow.standard = 40;
+        allowanceRow.amount = allowanceDays * 40;
+      }
+
+      const rowCount = Math.max(rows.length, routeEntries.length + 1);
+
+      return Array.from({ length: rowCount }, (_, index) => {
+        const row = rows[index] || createExpenseBucket("", "");
+        const routeRow = index > 0 ? routeEntries[index - 1] : null;
+        return {
+          routeId: routeRow ? routeRow.id : "",
+          date: routeRow ? routeRow.date : "",
+          place: routeRow ? routeRow.place : "",
+          content: row.content,
+          count: row.count || "",
+          peopleDays: row.peopleDays || "",
+          standard: row.standard || "",
+          amount: row.amount
+        };
+      });
+    }
+
+    function isDuplicateTaxiInvoice(invoice, taxiItineraryAmounts) {
+      return (
+        invoice.type === "taxi" &&
+        /发票/.test(invoice.name) &&
+        taxiItineraryAmounts.has(normalizeMoney(invoice.amount))
+      );
+    }
+
+    function shouldAutoFillRoute(invoice) {
+      return invoice.type === "train";
+    }
+
+    function createRouteRow() {
+      return {
+        id: crypto.randomUUID(),
+        date: "",
+        place: "",
+        dateStart: "",
+        dateEnd: "",
+        calendarYear: new Date().getFullYear(),
+        calendarMonth: new Date().getMonth() + 1
+      };
+    }
+
+    function resetRouteRows() {
+      manualRows.splice(0, manualRows.length, createRouteRow(), createRouteRow(), createRouteRow());
+    }
+
+    function normalizeMoney(value) {
+      const amount = Number(value);
+      return Number.isFinite(amount) && amount > 0 ? amount.toFixed(2) : "";
+    }
+
+    function createExpenseBucket(type, content) {
+      return {
+        type,
+        content,
+        count: 0,
+        amount: 0,
+        dates: [],
+        places: []
+      };
+    }
+
+    function addUnique(list, value) {
+      const text = String(value || "").trim();
+      if (text && !list.includes(text)) {
+        list.push(text);
+      }
+    }
+
+    function parseFormDate(value) {
+      const date = value ? new Date(`${value}T00:00:00`) : new Date();
+      return {
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        day: date.getDate()
+      };
+    }
+
+    function calculateAllowanceDays(values) {
+      return values.reduce((sum, value) => sum + calculateAllowanceDaysForText(value), 0);
+    }
+
+    function calculateAllowanceDaysForText(value) {
+      const text = String(value || "").trim();
+      if (!text) {
+        return 0;
+      }
+
+      return text
+        .split(/[、,，;；\n]+/)
+        .reduce((sum, part) => {
+          const dates = parseDateRange(part);
+          if (dates.length === 0) {
+            return sum;
+          }
+          if (dates.length === 1) {
+            return sum + 1;
+          }
+          const daySpan = Math.max(1, daysBetween(dates[0], dates[1]) + 1);
+          return sum + Math.max(1, daySpan - 1);
+        }, 0);
+    }
+
+    function parseDateRange(text) {
+      return Array.from(String(text || "").matchAll(/(?:(20\d{2})[年./-])?(\d{1,2})[月./-](\d{1,2})/g))
+        .map((match) => {
+          const year = Number(match[1]) || new Date().getFullYear();
+          const month = Number(match[2]);
+          const day = Number(match[3]);
+          if (month < 1 || month > 12 || day < 1 || day > 31) {
+            return null;
+          }
+          return new Date(year, month - 1, day);
+        })
+        .filter(Boolean)
+        .slice(0, 2);
+    }
+
+    function daysBetween(start, end) {
+      const oneDay = 24 * 60 * 60 * 1000;
+      const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      return Math.round((endDate - startDate) / oneDay);
+    }
+
+    function formatMoney(value) {
+      return value ? value.toFixed(2).replace(/\.00$/, "") : "";
+    }
+
+    function createMoneyAmountGrid(value) {
+      return `
+        <div class="money-grid">
+          ${moneyToChineseDigits(value).map((item) => `<span>${item}</span>`).join("")}
+        </div>
+      `;
+    }
+
+    function moneyToChineseDigits(value) {
+      const digits = ["零", "壹", "贰", "叁", "肆", "伍", "陆", "柒", "捌", "玖"];
+      const units = ["万", "仟", "佰", "拾", "元", "角", "分"];
+      const amount = Math.max(0, Number(value) || 0);
+      const cents = Math.round(amount * 100);
+      const yuan = Math.floor(cents / 100);
+      const jiao = Math.floor((cents % 100) / 10);
+      const fen = cents % 10;
+      const yuanDigits = String(yuan).padStart(5, "0").slice(-5);
+      return [
+        "（大写）",
+        ...[...yuanDigits.split("").map(Number), jiao, fen].map((num, index) => `${digits[num]}${units[index]}`)
+      ];
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function createTableInput(field, value) {
+      return `<input class="table-input" data-table-field="${field}" type="text" value="${escapeHtml(value)}">`;
+    }
+
+    function createRouteLabel(label) {
+      return `
+        <div class="route-label">
+          <span>${label}</span>
+          <button class="route-add" type="button" data-route-add aria-label="新增时间地点行">+</button>
+        </div>
+      `;
+    }
+
+    function createRouteInput(rowId, field, value) {
+      if (!rowId) {
+        return escapeHtml(value);
+      }
+      if (field === "date") {
+        return createRouteDatePicker(rowId, value);
+      }
+      return `<input class="${getTableInputClass(value)}" data-route-id="${rowId}" data-route-field="${field}" type="text" value="${escapeHtml(value)}">`;
+    }
+
+    function createRouteDatePicker(rowId, value) {
+      const row = manualRows.find((item) => item.id === rowId);
+      syncRouteRowDates(row, value);
+      const year = row && row.calendarYear ? row.calendarYear : new Date().getFullYear();
+      const month = row && row.calendarMonth ? row.calendarMonth : new Date().getMonth() + 1;
+      return `
+        <div class="date-range-picker" data-route-date-picker>
+          <button class="${getRouteDateDisplayClass(value)}" type="button" data-route-date-toggle>${escapeHtml(value || "选择日期")}</button>
+          ${createRouteCalendar(rowId, year, month, row)}
+        </div>
+      `;
+    }
+
+    function getRouteDateDisplayClass(value) {
+      const text = String(value || "");
+      if (text.length >= 13) {
+        return "route-date-display is-extra-tight";
+      }
+      if (text.length >= 9) {
+        return "route-date-display is-tight";
+      }
+      return "route-date-display";
+    }
+
+    function getTableInputClass(value) {
+      const text = String(value || "");
+      if (text.length >= 12) {
+        return "table-input is-extra-tight";
+      }
+      if (text.length >= 8) {
+        return "table-input is-tight";
+      }
+      return "table-input";
+    }
+
+    function createRouteCalendar(rowId, year, month, row) {
+      const previous = new Date(year, month - 2, 1);
+      const next = new Date(year, month, 1);
+      return `
+        <div class="date-popover">
+          <div class="calendar-head">
+            <button class="calendar-nav" type="button" data-route-id="${rowId}" data-calendar-year="${year}" data-calendar-month="${month}" data-calendar-nav="-1">‹</button>
+            <span>${year}年 ${month}月</span>
+            <button class="calendar-nav" type="button" data-route-id="${rowId}" data-calendar-year="${year}" data-calendar-month="${month}" data-calendar-nav="1">›</button>
+          </div>
+          <div class="calendar-week">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+          </div>
+          <div class="calendar-grid">
+            ${createCalendarDays(rowId, year, month, row).join("")}
+          </div>
+          <div class="calendar-hint">${row && row.dateStart && !row.dateEnd ? "请选择结束日期" : "请选择开始日期"}</div>
+        </div>
+      `;
+    }
+
+    function createCalendarDays(rowId, year, month, row) {
+      const firstDay = new Date(year, month - 1, 1);
+      const gridStart = new Date(year, month - 1, 1 - firstDay.getDay());
+      return Array.from({ length: 42 }, (_, index) => {
+        const date = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + index);
+        const value = toDateInputValue(date);
+        const classes = ["calendar-day"];
+        if (date.getMonth() !== month - 1) {
+          classes.push("is-muted");
+        }
+        if (row && isSameDateValue(value, row.dateStart) || row && isSameDateValue(value, row.dateEnd)) {
+          classes.push("is-selected");
+        } else if (row && isDateValueInRange(value, row.dateStart, row.dateEnd)) {
+          classes.push("is-in-range");
+        }
+        return `<button class="${classes.join(" ")}" type="button" data-route-id="${rowId}" data-calendar-day="${value}">${date.getDate()}</button>`;
+      });
+    }
+
+    function parseRouteDateRangeValue(value) {
+      const dates = parseDateRange(value);
+      return {
+        start: dates[0] ? toDateInputValue(dates[0]) : "",
+        end: dates[1] ? toDateInputValue(dates[1]) : ""
+      };
+    }
+
+    function formatRouteDateRange(startValue, endValue) {
+      const start = parseDateInputValue(startValue);
+      const end = parseDateInputValue(endValue);
+      if (!start && !end) {
+        return "";
+      }
+      if (start && !end) {
+        return formatChineseMonthDay(start);
+      }
+      if (!start && end) {
+        return formatChineseMonthDay(end);
+      }
+      return `${formatChineseMonthDay(start)}-${formatChineseMonthDay(end)}`;
+    }
+
+    function syncRouteRowDates(row, value) {
+      if (!row || row.dateStart || row.dateEnd || !value) {
+        return;
+      }
+      const range = parseRouteDateRangeValue(value);
+      row.dateStart = range.start;
+      row.dateEnd = range.end;
+      const firstDate = parseDateInputValue(row.dateStart);
+      if (firstDate) {
+        row.calendarYear = firstDate.getFullYear();
+        row.calendarMonth = firstDate.getMonth() + 1;
+      }
+    }
+
+    function selectRouteDate(row, value) {
+      if (!row.dateStart || row.dateEnd) {
+        row.dateStart = value;
+        row.dateEnd = "";
+        row.date = formatRouteDateRange(row.dateStart, row.dateEnd);
+        const date = parseDateInputValue(value);
+        row.calendarYear = date.getFullYear();
+        row.calendarMonth = date.getMonth() + 1;
+        return;
+      }
+
+      row.dateEnd = value;
+      if (row.dateEnd < row.dateStart) {
+        [row.dateStart, row.dateEnd] = [row.dateEnd, row.dateStart];
+      }
+      row.date = formatRouteDateRange(row.dateStart, row.dateEnd);
+    }
+
+    function reopenRoutePicker(rowId) {
+      requestAnimationFrame(() => {
+        const picker = pagesEl.querySelector(`[data-route-id="${rowId}"]`)?.closest("[data-route-date-picker]");
+        if (picker) {
+          picker.classList.add("is-open");
+        }
+      });
+    }
+
+    function isSameDateValue(value, target) {
+      return Boolean(value && target && value === target);
+    }
+
+    function isDateValueInRange(value, start, end) {
+      return Boolean(value && start && end && value > start && value < end);
+    }
+
+    function parseDateInputValue(value) {
+      if (!value) {
+        return null;
+      }
+      const [year, month, day] = value.split("-").map(Number);
+      if (!year || !month || !day) {
+        return null;
+      }
+      return new Date(year, month - 1, day);
+    }
+
+    function toDateInputValue(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatChineseMonthDay(date) {
+      return `${date.getMonth() + 1}月${date.getDate()}日`;
+    }
+
+    function createSlot(position, unit) {
+      const slot = createElement("div", `slot ${position}`);
+
+      if (!unit || unit.type === "empty") {
+        const placeholder = createElement("span", "placeholder");
+        placeholder.textContent = "空白";
+        slot.append(placeholder);
+        return slot;
+      }
+
+      if (unit.type === "train") {
+        const grid = createElement("div", "train-grid");
+        for (let index = 0; index < 6; index += 1) {
+          const cell = createElement("div", "train-cell");
+          const invoice = unit.invoices[index];
+          if (invoice) {
+            cell.append(createPreviewContainer(invoice));
+          }
+          grid.append(cell);
+        }
+        slot.append(grid);
+        return slot;
+      }
+
+      slot.append(createPreviewContainer(unit.invoice));
+      return slot;
+    }
+
+    function createPreviewContainer(invoice) {
+      const wrapper = createElement("div", "preview-container");
+      const removeButton = createElement("button", "preview-remove");
+      removeButton.type = "button";
+      removeButton.setAttribute("aria-label", `删除${invoice.name}`);
+      removeButton.textContent = "×";
+      removeButton.dataset.invoiceId = invoice.id;
+      wrapper.append(createInvoicePreview(invoice));
+      wrapper.append(removeButton);
+      return wrapper;
+    }
+
+    function createThumb(invoice) {
+      if (invoice.fileType === "pdf") {
+        const label = document.createElement("span");
+        label.textContent = "PDF";
+        return label;
+      }
+
+      const image = document.createElement("img");
+      image.src = invoice.src;
+      image.alt = invoice.name;
+      return image;
+    }
+
+    function createInvoicePreview(invoice) {
+      if (invoice.fileType === "pdf") {
+        const pdf = document.createElement("object");
+        pdf.className = "invoice-pdf";
+        pdf.data = `${invoice.src}#toolbar=0&navpanes=0&scrollbar=0`;
+        pdf.type = "application/pdf";
+        pdf.textContent = invoice.name;
+        return pdf;
+      }
+
+      const image = document.createElement("img");
+      image.className = "invoice-image";
+      image.src = invoice.src;
+      image.alt = invoice.name;
+      return image;
+    }
+
+    function createElement(tagName, className) {
+      const element = document.createElement(tagName);
+      element.className = className;
+      return element;
+    }
+
+    loadExpenseFormSettings();
+    resetRouteRows();
+    render();
+    renderLanguageOptions();
+    renderExpenseFormSettings();
+    applyLocale();
+  </script>
+</body>
+</html>

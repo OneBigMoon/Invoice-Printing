@@ -1,0 +1,19 @@
+{
+  "name": "发票打印排版",
+  "short_name": "发票排版",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0f766e",
+  "background_color": "#e9eef1",
+  "display": "standalone"
+}

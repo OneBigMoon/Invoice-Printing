@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="发票打印排版">
+  <rect width="128" height="128" rx="26" fill="#0f766e"/>
+  <path d="M34 20h48l18 18v70a8 8 0 0 1-8 8H34a8 8 0 0 1-8-8V28a8 8 0 0 1 8-8z" fill="#f8fafc"/>
+  <path d="M82 20v18h18" fill="#ccebe6"/>
+  <path d="M41 45h46M41 60h46M41 75h28" stroke="#0f766e" stroke-width="7" stroke-linecap="round"/>
+  <rect x="72" y="79" width="31" height="24" rx="5" fill="#f59e0b"/>
+  <path d="M79 87h17M79 95h10" stroke="#fff7ed" stroke-width="4" stroke-linecap="round"/>
+</svg>
