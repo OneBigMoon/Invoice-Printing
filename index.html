@@ -1002,28 +1002,28 @@
           <span class="badge" data-i18n="typeTaxi">市区交通费</span>
           <div class="upload-title" data-i18n="uploadTitle">拖拽图片或 PDF</div>
           <div class="upload-meta" data-i18n="uploadTaxiMeta">上传文件后直接归到“市区交通费”</div>
-          <label class="choose-file" for="invoiceFiles-taxi" data-i18n="chooseFile">选择文件</label>
+          <button class="choose-file" type="button" data-file-trigger="taxi" data-i18n="chooseFile">选择文件</button>
           <input class="file-input" id="invoiceFiles-taxi" data-type="taxi" type="file" accept="image/*,.pdf,application/pdf" multiple>
         </div>
         <div class="dropzone" data-target-type="train">
           <span class="badge" data-i18n="typeTrain">飞机车船费</span>
           <div class="upload-title" data-i18n="uploadTitle">拖拽图片或 PDF</div>
           <div class="upload-meta" data-i18n="uploadTrainMeta">火车票半页最多显示 6 张</div>
-          <label class="choose-file" for="invoiceFiles-train" data-i18n="chooseFile">选择文件</label>
+          <button class="choose-file" type="button" data-file-trigger="train" data-i18n="chooseFile">选择文件</button>
           <input class="file-input" id="invoiceFiles-train" data-type="train" type="file" accept="image/*,.pdf,application/pdf" multiple>
         </div>
         <div class="dropzone" data-target-type="hotel">
           <span class="badge" data-i18n="typeHotel">旅馆费</span>
           <div class="upload-title" data-i18n="uploadTitle">拖拽图片或 PDF</div>
           <div class="upload-meta" data-i18n="uploadHotelMeta">上传文件后直接归到“旅馆费”</div>
-          <label class="choose-file" for="invoiceFiles-hotel" data-i18n="chooseFile">选择文件</label>
+          <button class="choose-file" type="button" data-file-trigger="hotel" data-i18n="chooseFile">选择文件</button>
           <input class="file-input" id="invoiceFiles-hotel" data-type="hotel" type="file" accept="image/*,.pdf,application/pdf" multiple>
         </div>
         <div class="dropzone" data-target-type="other">
           <span class="badge" data-i18n="typeOther">其他</span>
           <div class="upload-title" data-i18n="uploadTitle">拖拽图片或 PDF</div>
           <div class="upload-meta" data-i18n="uploadOtherMeta">上传文件后直接归到“其他”</div>
-          <label class="choose-file" for="invoiceFiles-other" data-i18n="chooseFile">选择文件</label>
+          <button class="choose-file" type="button" data-file-trigger="other" data-i18n="chooseFile">选择文件</button>
           <input class="file-input" id="invoiceFiles-other" data-type="other" type="file" accept="image/*,.pdf,application/pdf" multiple>
         </div>
       </div>
@@ -1080,6 +1080,7 @@
     const invoices = [];
     const manualRows = [];
     const fileInputs = document.querySelectorAll(".file-input");
+    const fileTriggers = document.querySelectorAll("[data-file-trigger]");
     const dropzones = document.querySelectorAll(".dropzone");
     const settingFields = document.querySelectorAll("[data-setting-field]");
     const saveSettingsBtn = document.querySelector("#saveSettingsBtn");
@@ -1186,6 +1187,15 @@
       fileInput.addEventListener("change", async () => {
         await addFiles(Array.from(fileInput.files || []), targetType);
         fileInput.value = "";
+      });
+    });
+
+    fileTriggers.forEach((trigger) => {
+      trigger.addEventListener("click", () => {
+        const fileInput = document.querySelector(`#invoiceFiles-${trigger.dataset.fileTrigger}`);
+        if (fileInput) {
+          fileInput.click();
+        }
       });
     });
 
